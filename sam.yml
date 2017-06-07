@@ -10,11 +10,11 @@ Parameters:
     Type: String
     Default: Development
 
-  SubnetIds:
-    Type: String
+  # SubnetIds:
+  #   Type: String
 
-  SecurityGroupIds:
-    Type: String
+  # SecurityGroupIds:
+  #   Type: String
 
   ElasticsearchHost:
     Type: String
@@ -47,11 +47,11 @@ Resources:
       Runtime: nodejs6.10
       CodeUri: ./out
       Timeout: 10
-      VpcConfig:
-        SecurityGroupIds:
-          Ref: SecurityGroupIds
-        SubnetIds:
-          Ref: SubnetIds
+      # VpcConfig:
+      #   SecurityGroupIds:
+      #     Ref: SecurityGroupIds
+      #   SubnetIds:
+      #     Ref: SubnetIds
 
   ApiGatewayExecutionRole:
     Type: AWS::IAM::Role

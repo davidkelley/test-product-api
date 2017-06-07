@@ -1,5 +1,7 @@
 {
   "Parameters": {
-    "Stage": "release"
+    "Stage": "release",
+    "ElasticsearchHost": "http://release.release.com",
+    "ElasticsearchPath": "/products/product"
   }
 }

@@ -1,5 +1,7 @@
 {
   "Parameters": {
-    "Stage": "test"
+    "Stage": "test",
+    "ElasticsearchHost": "http://test.test.com",
+    "ElasticsearchPath": "/products/product"
   }
 }
