@@ -1,0 +1,265 @@
+swagger: "2.0"
+info:
+  title: api
+  version: 0.0.1
+schemes:
+  - https
+x-amazon-apigateway-request-validators:
+  all:
+    validateRequestBody: true
+    validateRequestParameters: true
+  body-only:
+    validateRequestBody: true
+    validateRequestParameters: false
+  params-only:
+    validateRequestBody: false
+    validateRequestParameters: true
+definitions:
+  Empty:
+    type: object
+    description: There is no schema
+    title: Empty Schema
+  Error:
+    type: object
+    title: Error Schema
+    description: There was an error processing the request
+    properties:
+      message:
+        type: string
+        description: The Amazon-generated or custom error message
+      type:
+        type: string
+        description: The type of error generated
+      __raw:
+        type: object
+        title: Raw Error
+        description: |
+          This object contains the raw message sent from the
+          underlying integration
+paths:
+  /.well-known:
+    head:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 200 response
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Headers:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Expose-Headers:
+              type: "string"
+            X-Region:
+              type: string
+            Cache-Control:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Expose-Headers: "'X-Region'"
+              method.response.header.X-Region: "'{{ Region }}'"
+              method.response.header.Cache-Control: "'max-age=260, public'"
+            responseTemplates:
+              application/json: |
+                {}
+        passthroughBehavior: never
+        requestParameters:
+          integration.request.header.Content-Type: "'application/json'"
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode": 200
+            }
+        type: mock
+    options:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 200 response
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Max-Age:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'180'"
+            responseTemplates:
+              application/json: |
+                {}
+        passthroughBehavior: never
+        requestParameters:
+          integration.request.header.Content-Type: "'application/json'"
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode": 200
+            }
+        type: mock
+  /search/{query}/{offset}:
+    get:
+      x-amazon-apigateway-request-validator: params-only
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: query
+          in: path
+          required: true
+          type: string
+        - name: offset
+          in: path
+          required: true
+          type: number
+      responses:
+        "200":
+          description: The query was executed successfully
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Headers:
+              type: "string"
+            Access-Control-Allow-Origin:
+              type: "string"
+            Cache-Control:
+              type: string
+        "400":
+          description: A 400 error occurred
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: A 500 error occurred
+          schema:
+            $ref: "#/definitions/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        credentials: "arn:aws:iam::{{ AccountId }}:role/${stageVariables.ExecutionRoleName}"
+        httpMethod: POST
+        uri: "arn:aws:apigateway:{{ Region }}:lambda:path//2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AccountId }}:function:${stageVariables.ProxyFunction}/invocations"
+        requestParameters:
+          integration.request.header.X-Request-Method: "'POST'"
+          integration.request.header.X-Request-Host: "stageVariables.ElasticsearchHost"
+          integration.request.header.X-Request-Path: "stageVariables.ElasticsearchPath"
+        requestTemplates:
+          application/json: |
+            #set ($query = $util.base64Decode($input.params('query')))
+            #set ($offset = $input.params('offset'))
+            #set ($size = 30)
+            {
+              "query": {
+                "simple_query_string" : {
+                  "query": "$query",
+                  "analyzer": "standard",
+                  "fields": ["title^10", "description"],
+                  "default_operator": "and"
+                }
+              },
+              "from": $offset,
+              "size": $size,
+              "sort": [
+                {
+                  "points": {
+                    "order": "desc"
+                  }
+                },
+                {
+                  "created_at": {
+                    "order": "desc"
+                  }
+                }
+              ]
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Cache-Control: "'max-age=60, public'"
+          4\d{2}:
+            statusCode: "400"
+            responseTemplates:
+              application/json: |
+                {
+                  "type" : "BadRequest",
+                  "message" : "Bad Request",
+                  "__raw": $input.body
+                }
+          5\d{2}:
+            statusCode: "500"
+            responseTemplates:
+              application/json: |
+                {
+                  "type" : "InternalServerError",
+                  "message" : "There was an internal error",
+                  "__raw": $input.body
+                }
+        passthroughBehavior: when_no_match
+    options:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 200 response
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Max-Age:
+              type: string
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+            responseTemplates:
+              application/json: |
+                {}
+        passthroughBehavior: never
+        requestParameters:
+          integration.request.header.Content-Type: "'application/json'"
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode": 200
+            }
+        type: mock

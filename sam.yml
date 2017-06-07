@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Public API
+
+Parameters:
+
+  Stage:
+    Type: String
+    Default: Development
+
+  SubnetIds:
+    Type: String
+
+  SecurityGroupIds:
+    Type: String
+
+  ElasticsearchHost:
+    Type: String
+
+  ElasticsearchPath:
+    Type: String
+
+Resources:
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName:
+        Ref: Stage
+      DefinitionUri: ./artifacts/api.yml
+      Variables:
+        ElasticsearchHost:
+          Ref: ElasticsearchHost
+        ElasticsearchPath:
+          Ref: ElasticsearchPath
+        ProxyFunction:
+          Ref: Proxy
+        ExecutionRoleName:
+          Ref: ApiGatewayExecutionRole
+
+  Proxy:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.Proxy
+      Runtime: nodejs6.10
+      CodeUri: ./out
+      Timeout: 10
+      VpcConfig:
+        SecurityGroupIds:
+          Ref: SecurityGroupIds
+        SubnetIds:
+          Ref: SubnetIds
+
+  ApiGatewayExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+
+  ApiGatewayExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: APIPermissions
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:*
+            Resource:
+              - Fn::GetAtt: [Proxy, Arn]
+      Roles:
+        - Ref: ApiGatewayExecutionRole
