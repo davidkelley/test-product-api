@@ -48,7 +48,9 @@ Resources:
       CodeUri: ./out
       Timeout: 10
       Policies:
+        - AWSLambdaENIManagementAccess
         - AWSLambdaVPCAccessExecutionRole
+        - AmazonEC2ReadOnlyAccess
       VpcConfig:
         SecurityGroupIds:
           Ref: SecurityGroupIds
