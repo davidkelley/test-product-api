@@ -51,12 +51,6 @@ Resources:
         - AWSLambdaENIManagementAccess
         - AWSLambdaVPCAccessExecutionRole
         - AmazonEC2ReadOnlyAccess
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action: ec2:DescribeSecurityGroups
-              Resource: "*"
-
       VpcConfig:
         SecurityGroupIds:
           Ref: SecurityGroupIds

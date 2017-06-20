@@ -102,6 +102,19 @@ Resources:
                   Ref: Build
         - Name: Test
           Actions:
+            - Name: Reset
+              RunOrder: 7
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration:
+                ActionMode: DELETE_ONLY
+                RoleArn:
+                  Fn::GetAtt: [CloudformationRole, Arn]
+                StackName:
+                    Fn::Sub: "${Project}-test-system"
             - Name: Create
               RunOrder: 1
               ActionTypeId:
@@ -263,6 +276,7 @@ Resources:
                   - 'lambda:*'
                   - 'dynamodb:*'
                   - 'sns:*'
+                  - 'ec2:*'
                   - 'events:*'
                   - 'cognito-idp:*'
                   - 'apigateway:*'
