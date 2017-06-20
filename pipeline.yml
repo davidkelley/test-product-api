@@ -103,7 +103,7 @@ Resources:
         - Name: Test
           Actions:
             - Name: Reset
-              RunOrder: 7
+              RunOrder: 1
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -116,7 +116,7 @@ Resources:
                 StackName:
                     Fn::Sub: "${Project}-test-system"
             - Name: Create
-              RunOrder: 1
+              RunOrder: 2
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -136,7 +136,7 @@ Resources:
                 TemplatePath: BuildOutput::template.yml
                 TemplateConfiguration: BuildOutput::test.json
             - Name: Deploy
-              RunOrder: 2
+              RunOrder: 3
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -152,7 +152,7 @@ Resources:
                 StackName:
                     Fn::Sub: "${Project}-test-system"
             - Name: Approve
-              RunOrder: 5
+              RunOrder: 4
               ActionTypeId:
                 Category: Approval
                 Owner: AWS
@@ -164,7 +164,7 @@ Resources:
                 CustomData:
                   Fn::Sub: 'Do you want to create a change set against the production stack and delete the ${Project}-test stack?'
             - Name: Delete
-              RunOrder: 7
+              RunOrder: 5
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
