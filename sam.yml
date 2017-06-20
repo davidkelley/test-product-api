@@ -55,7 +55,7 @@ Resources:
           Statement:
             - Effect: Allow
               Action: ec2:DescribeSecurityGroups
-              Resource: *
+              Resource: "*"
 
       VpcConfig:
         SecurityGroupIds:
