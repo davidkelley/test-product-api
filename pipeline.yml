@@ -4,18 +4,18 @@ Description: "Creates a build, test and deployment pipeline."
 
 Parameters:
 
-  GitHubToken:
-    Type: String
-    NoEcho: true
-    Description: A Github OAuth Token with public_repo or repo scope.
+  # GitHubToken:
+  #   Type: String
+  #   NoEcho: true
+  #   Description: A Github OAuth Token with public_repo or repo scope.
 
-  GitHubUser:
-    Type: String
-    Description: Organisation or Username that the repository belongs to.
+  # GitHubUser:
+  #   Type: String
+  #   Description: Organisation or Username that the repository belongs to.
 
-  Repo:
-    Type: String
-    Description: The name of the repository.
+  # Repo:
+  #   Type: String
+  #   Description: The name of the repository.
 
   Branch:
     Type: String
@@ -35,26 +35,18 @@ Metadata:
           default: "Project Options"
         Parameters:
           - Project
-      - Label:
-          default: "GitHub Configuration"
-        Parameters:
-          - GitHubToken
-          - GitHubUser
-          - Repo
           - Branch
     ParameterLabels:
-      GitHubToken:
-        default: "GitHub Personal Access Token"
-      GitHubUser:
-        default: "Username or Organisation Name"
-      Repo:
-        default: "Repository Name"
-      Branch:
-        default: "Branch on Repository"
       Project:
         default: "A unique short identifier"
 
 Resources:
+
+  Repository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName:
+        Ref: Project
 
   PipelineArtifactStore:
     Type: AWS::S3::Bucket
@@ -82,16 +74,16 @@ Resources:
               RunOrder: 1
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
+                Owner: AWS
                 Version: 1
-                Provider: GitHub
+                Provider: CodeCommit
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
-                Owner: !Ref GitHubUser
-                Repo: !Ref Repo
-                Branch: !Ref Branch
-                OAuthToken: !Ref GitHubToken
+                BranchName:
+                  Ref: Branch
+                RepositoryName:
+                  Fn::GetAtt: [Repository, Name]
         - Name: Build
           Actions:
             - Name: Build
@@ -127,7 +119,7 @@ Resources:
                 StackName:
                     Fn::Sub: "${Project}-test-system"
                 ChangeSetName:
-                    Fn::Sub: "${Project}-test-system-changeset"
+                    Fn::Sub: "${Project}-test-system-cs"
                 TemplatePath: BuildOutput::template.yml
                 TemplateConfiguration: BuildOutput::test.json
             - Name: Deploy
@@ -141,7 +133,7 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName:
-                    Fn::Sub: "${Project}-test-system-changeset"
+                    Fn::Sub: "${Project}-test-system-cs"
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
@@ -190,7 +182,7 @@ Resources:
                 StackName:
                     Fn::Sub: "${Project}-release"
                 ChangeSetName:
-                    Fn::Sub: "${Project}-release-changeset"
+                    Fn::Sub: "${Project}-release-cs"
                 TemplatePath: BuildOutput::template.yml
                 TemplateConfiguration: BuildOutput::release.json
             - Name: ApproveChangeSet
@@ -216,7 +208,7 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName:
-                    Fn::Sub: "${Project}-release-changeset"
+                    Fn::Sub: "${Project}-release-cs"
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
@@ -300,6 +292,15 @@ Resources:
                   - Fn::Sub: "arn:aws:s3:::${PipelineArtifactStore}"
                   - Fn::Sub: "arn:aws:s3:::${PipelineArtifactStore}/*"
               - Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Effect: Allow
+                Resource:
+                  - Fn::GetAtt: [Repository, Arn]
+              - Action:
                   - 'codebuild:*'
                 Effect: Allow
                 Resource:
@@ -356,3 +357,10 @@ Resources:
                   - 'cloudformation:*'
                 Effect: Allow
                 Resource: '*'
+
+Outputs:
+
+  Clone:
+    Description: SSH Clone URL
+    Value:
+      Fn::GetAtt: [Repository, CloneUrlSsh]

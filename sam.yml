@@ -11,10 +11,10 @@ Parameters:
     Default: Development
 
   # SubnetIds:
-  #   Type: String
+  #   Type: CommaDelimitedList
 
   # SecurityGroupIds:
-  #   Type: String
+  #   Type: CommaDelimitedList
 
   ElasticsearchHost:
     Type: String
