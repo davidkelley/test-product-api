@@ -1,7 +1,9 @@
 {
   "Parameters": {
     "Stage": "test",
-    "ElasticsearchHost": "http://test.test.com",
-    "ElasticsearchPath": "/products/product"
+    "ElasticsearchHost": "http://internal-qa-shared-es-eselb-qp4cz4d91309-1637424262.eu-west-1.elb.amazonaws.com/",
+    "ElasticsearchPath": "/product_warehouses_uk_staging/product",
+    "SubnetIds": "subnet-3378e544,subnet-78ef9a1d,subnet-cffd4b96",
+    "SecurityGroupIds": "qa-shared-es-EsElb-QP4CZ4D91309"
   }
 }

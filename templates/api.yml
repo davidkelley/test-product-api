@@ -121,24 +121,14 @@ paths:
               "statusCode": 200
             }
         type: mock
-  /search/{query}/{offset}:
+  /search:
     get:
-      x-amazon-apigateway-request-validator: params-only
       x-amazon-apigateway-auth:
         type: aws_iam
       consumes:
         - application/json
       produces:
         - application/json
-      parameters:
-        - name: query
-          in: path
-          required: true
-          type: string
-        - name: offset
-          in: path
-          required: true
-          type: number
       responses:
         "200":
           description: The query was executed successfully
@@ -170,32 +160,14 @@ paths:
           integration.request.header.X-Request-Path: "stageVariables.ElasticsearchPath"
         requestTemplates:
           application/json: |
-            #set ($query = $util.base64Decode($input.params('query')))
-            #set ($offset = $input.params('offset'))
+            #set ($offset = 0)
             #set ($size = 30)
             {
               "query": {
-                "simple_query_string" : {
-                  "query": "$query",
-                  "analyzer": "standard",
-                  "fields": ["title^10", "description"],
-                  "default_operator": "and"
-                }
+                "match_all": {}
               },
               "from": $offset,
-              "size": $size,
-              "sort": [
-                {
-                  "points": {
-                    "order": "desc"
-                  }
-                },
-                {
-                  "created_at": {
-                    "order": "desc"
-                  }
-                }
-              ]
+              "size": $size
             }
         responses:
           default:
