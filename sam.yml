@@ -47,6 +47,8 @@ Resources:
       Runtime: nodejs6.10
       CodeUri: ./out
       Timeout: 10
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
       VpcConfig:
         SecurityGroupIds:
           Ref: SecurityGroupIds
