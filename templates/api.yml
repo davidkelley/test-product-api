@@ -150,7 +150,7 @@ paths:
           schema:
             $ref: "#/definitions/Error"
       x-amazon-apigateway-integration:
-        type: aws
+        type: aws_proxy
         credentials: "arn:aws:iam::{{ AccountId }}:role/${stageVariables.ExecutionRoleName}"
         httpMethod: POST
         uri: "arn:aws:apigateway:{{ Region }}:lambda:path//2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AccountId }}:function:${stageVariables.ProxyFunction}/invocations"
