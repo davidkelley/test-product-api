@@ -18,7 +18,7 @@ const wrapped = lambdaWrapper.wrap(mod, { handler: 'Proxy' });
 
 describe('λ.Proxy', () => {
   describe('a valid request', () => {
-    const body = JSON.stringify({ words: faker.random.words() });
+    const body = { words: faker.random.words() };
 
     const method = faker.random.arrayElement(['GET', 'POST', 'PUT']);
 
@@ -28,19 +28,15 @@ describe('λ.Proxy', () => {
 
     const port = faker.random.arrayElement([1234,235,4567]);
 
-    const type = 'text/html';
-
-    const headers = {
-      'X-Request-Method': method,
-      'X-Request-Path': path,
-      'X-Request-Host': host,
-      'X-Request-Port': port,
-      'Content-Type': type,
-    };
+    const type = 'application/json';
 
     const event = {
       body,
-      headers,
+      method,
+      path,
+      port,
+      contentType: type,
+      hostname: host,
     };
 
     beforeEach(() => {

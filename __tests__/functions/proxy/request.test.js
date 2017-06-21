@@ -11,18 +11,9 @@ import http from 'http';
 import Request from '../../../functions/proxy/request';
 
 describe('Request', () => {
-  describe('#event', () => {
-    const event = { foo: true };
-
-    it('return the correct event', () => {
-      const req = new Request(event);
-      expect(req.event).toBe(event);
-    });
-  });
-
   describe('#body', () => {
     describe('when defined', () => {
-      const body = JSON.stringify({ words: faker.random.words() });
+      const body = { words: faker.random.words() };
 
       const event = { body };
 
@@ -37,7 +28,7 @@ describe('Request', () => {
 
       it('returns an empty body', () => {
         const req = new Request(event);
-        expect(req.body).toBe('');
+        expect(req.body).toMatchObject({});
       });
     });
   });
@@ -46,7 +37,7 @@ describe('Request', () => {
     describe('when defined', () => {
       const method = faker.random.arrayElement(['GET', 'POST', 'PUT']);
 
-      const event = { headers: { 'X-Request-Method': method } };
+      const event = { method };
 
       it('return the correct method', () => {
         const req = new Request(event);
@@ -55,7 +46,7 @@ describe('Request', () => {
     });
 
     describe('when not defined', () => {
-      const event = { headers: {} };
+      const event = {};
 
       it('returns GET method', () => {
         const req = new Request(event);
@@ -68,7 +59,7 @@ describe('Request', () => {
     describe('when defined', () => {
       const path = faker.internet.url();
 
-      const event = { headers: { 'X-Request-Path': path } };
+      const event = { path };
 
       it('return the correct path', () => {
         const req = new Request(event);
@@ -77,7 +68,7 @@ describe('Request', () => {
     });
 
     describe('when not defined', () => {
-      const event = { headers: {} };
+      const event = {};
 
       it('returns root path', () => {
         const req = new Request(event);
@@ -88,22 +79,13 @@ describe('Request', () => {
 
   describe('#hostname', () => {
     describe('when defined', () => {
-      const host = faker.internet.domainName();
+      const hostname = faker.internet.domainName();
 
-      const event = { headers: { 'X-Request-Host': host } };
+      const event = { hostname };
 
       it('return the correct hostname', () => {
         const req = new Request(event);
-        expect(req.hostname).toBe(host);
-      });
-    });
-
-    describe('when not defined', () => {
-      const event = { headers: {} };
-
-      it('throws an error', () => {
-        const req = new Request(event);
-        expect(() => { req.hostname }).toThrowError(/missing X-Request-Host/);
+        expect(req.hostname).toBe(hostname);
       });
     });
   });
@@ -112,7 +94,7 @@ describe('Request', () => {
     describe('when defined', () => {
       const port = faker.random.number().toString();
 
-      const event = { headers: { 'X-Request-Port': port } };
+      const event = { port };
 
       it('return the correct port', () => {
         const req = new Request(event);
@@ -121,7 +103,7 @@ describe('Request', () => {
     });
 
     describe('when not defined', () => {
-      const event = { headers: {} };
+      const event = {};
 
       it('returns default port 80', () => {
         const req = new Request(event);
@@ -132,18 +114,18 @@ describe('Request', () => {
 
   describe('#contentType', () => {
     describe('when defined', () => {
-      const type = 'text/html';
+      const contentType = 'text/html';
 
-      const event = { headers: { 'Content-Type': type } };
+      const event = { contentType };
 
       it('return the correct header', () => {
         const req = new Request(event);
-        expect(req.contentType).toBe(type);
+        expect(req.contentType).toBe(contentType);
       });
     });
 
     describe('when not defined', () => {
-      const event = { headers: {} };
+      const event = {};
 
       it('returns default type of application/json', () => {
         const req = new Request(event);
@@ -153,7 +135,7 @@ describe('Request', () => {
   });
 
   describe('#options', () => {
-    const body = JSON.stringify({ words: faker.random.words() });
+    const body = { words: faker.random.words() };
 
     const method = faker.random.arrayElement(['GET', 'POST', 'PUT']);
 
@@ -165,18 +147,14 @@ describe('Request', () => {
 
     const type = 'text/html';
 
-    const headers = {
-      'X-Request-Method': method,
-      'X-Request-Path': path,
-      'X-Request-Host': host,
-      'X-Request-Port': port,
-      'Content-Type': type,
-    }
-
     const event = {
       body,
-      headers,
-    }
+      method,
+      path,
+      port,
+      contentType: type,
+      hostname: host,
+    };
 
     it('returns an expected options set', () => {
       const req = new Request(event);
@@ -187,7 +165,7 @@ describe('Request', () => {
         port: parseInt(port),
         headers: {
           'Content-Type': type,
-          'Content-Length': Buffer.byteLength(body),
+          'Content-Length': Buffer.byteLength(JSON.stringify(body)),
         }
       });
     });
@@ -207,18 +185,14 @@ describe('Request', () => {
 
       const type = 'text/html';
 
-      const headers = {
-        'X-Request-Method': method,
-        'X-Request-Path': path,
-        'X-Request-Host': host,
-        'X-Request-Port': port,
-        'Content-Type': type,
-      }
-
       const event = {
         body,
-        headers,
-      }
+        method,
+        path,
+        port,
+        contentType: type,
+        hostname: host,
+      };
 
       beforeEach(() => {
         http.__setResp(200);

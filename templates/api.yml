@@ -150,24 +150,23 @@ paths:
           schema:
             $ref: "#/definitions/Error"
       x-amazon-apigateway-integration:
-        type: aws_proxy
+        type: aws
         credentials: "arn:aws:iam::{{ AccountId }}:role/${stageVariables.ExecutionRoleName}"
         httpMethod: POST
         uri: "arn:aws:apigateway:{{ Region }}:lambda:path//2015-03-31/functions/arn:aws:lambda:{{ Region }}:{{ AccountId }}:function:${stageVariables.ProxyFunction}/invocations"
-        requestParameters:
-          integration.request.header.X-Request-Method: "'POST'"
-          integration.request.header.X-Request-Host: "stageVariables.ElasticsearchHost"
-          integration.request.header.X-Request-Path: "stageVariables.ElasticsearchPath"
         requestTemplates:
           application/json: |
-            #set ($offset = 0)
-            #set ($size = 30)
             {
-              "query": {
-                "match_all": {}
-              },
-              "from": $offset,
-              "size": $size
+              "host": "$stageVariables.ElasticsearchHost",
+              "path": "$stageVariables.ElasticsearchPath",
+              "method": "POST",
+              "body": {
+                "query": {
+                  "match_all": {}
+                },
+                "from": $offset,
+                "size": $size
+              }
             }
         responses:
           default:
@@ -176,6 +175,9 @@ paths:
               method.response.header.Access-Control-Allow-Headers: "'*'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
               method.response.header.Cache-Control: "'max-age=60, public'"
+            responseTemplates:
+              application/json: |
+                $input.path('$.body')
           4\d{2}:
             statusCode: "400"
             responseTemplates:

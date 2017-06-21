@@ -2,34 +2,14 @@ import http from 'http';
 import { Buffer } from 'buffer';
 
 export default class {
-  constructor(event = {}) {
-    this.event = event;
-  }
-
-  get body() {
-    return this.event.body || '';
-  }
-
-  get method() {
-    return (this.event.headers['X-Request-Method'] || 'GET');
-  }
-
-  get path() {
-    return (this.event.headers['X-Request-Path'] || '/');
-  }
-
-  get hostname() {
-    const host = this.event.headers['X-Request-Host'];
-    if (!host) throw new Error('integration missing X-Request-Host header');
-    return host;
-  }
-
-  get port() {
-    return parseInt(this.event.headers['X-Request-Port'] || 80, 10);
-  }
-
-  get contentType() {
-    return this.event.headers['Content-Type'] || 'application/json';
+  constructor({ body = {}, method = 'GET', path = '/',
+    hostname, port = 80, contentType = 'application/json' }) {
+    this.method = method;
+    this.body = body;
+    this.path = path;
+    this.hostname = hostname;
+    this.port = parseInt(port, 10);
+    this.contentType = contentType;
   }
 
   get options() {
@@ -41,7 +21,7 @@ export default class {
       hostname,
       headers: {
         'Content-Type': contentType,
-        'Content-Length': Buffer.byteLength(body, 'utf8'),
+        'Content-Length': Buffer.byteLength(JSON.stringify(body), 'utf8'),
       },
     };
   }
@@ -58,10 +38,10 @@ export default class {
           res.on('end', () => { resolve({ statusCode, headers, body: chunks }); });
         });
         req.on('error', (err) => { reject(err); });
-        req.write(body);
+        req.write(JSON.stringify(body));
         req.end();
       } catch (err) {
-        console.error(`[Error] "${err.toString()}"\n${JSON.stringify(this.event)}`);
+        console.error(`[Error] "${err.toString()}"\n${JSON.stringify(this.options)}`);
         console.trace(err);
         reject(err);
       }
