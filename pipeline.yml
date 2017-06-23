@@ -4,27 +4,14 @@ Description: "Creates a build, test and deployment pipeline."
 
 Parameters:
 
-  # GitHubToken:
-  #   Type: String
-  #   NoEcho: true
-  #   Description: A Github OAuth Token with public_repo or repo scope.
-
-  # GitHubUser:
-  #   Type: String
-  #   Description: Organisation or Username that the repository belongs to.
-
-  # Repo:
-  #   Type: String
-  #   Description: The name of the repository.
-
   Branch:
     Type: String
     Default: master
     Description: Branch to use from the repository.
 
-  Project:
+  Repository:
     Type: String
-    Description: The name this project will be identified as inside AWS.
+    Description: The name of the repository for this pipeline.
 
 
 Metadata:
@@ -34,19 +21,13 @@ Metadata:
       - Label:
           default: "Project Options"
         Parameters:
-          - Project
+          - Repository
           - Branch
     ParameterLabels:
       Project:
         default: "A unique short identifier"
 
 Resources:
-
-  Repository:
-    Type: AWS::CodeCommit::Repository
-    Properties:
-      RepositoryName:
-        Ref: Project
 
   PipelineArtifactStore:
     Type: AWS::S3::Bucket
@@ -83,7 +64,7 @@ Resources:
                 BranchName:
                   Ref: Branch
                 RepositoryName:
-                  Fn::GetAtt: [Repository, Name]
+                  Ref: Repository
         - Name: Build
           Actions:
             - Name: Build
@@ -114,7 +95,7 @@ Resources:
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-test-system"
+                    Fn::Sub: "${Repository}-test-system"
             - Name: Create
               RunOrder: 2
               ActionTypeId:
@@ -130,9 +111,9 @@ Resources:
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-test-system"
+                    Fn::Sub: "${Repository}-test-system"
                 ChangeSetName:
-                    Fn::Sub: "${Project}-test-system-cs"
+                    Fn::Sub: "${Repository}-test-system-cs"
                 TemplatePath: BuildOutput::template.yml
                 TemplateConfiguration: BuildOutput::test.json
             - Name: Deploy
@@ -146,11 +127,11 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName:
-                    Fn::Sub: "${Project}-test-system-cs"
+                    Fn::Sub: "${Repository}-test-system-cs"
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-test-system"
+                    Fn::Sub: "${Repository}-test-system"
             - Name: Approve
               RunOrder: 4
               ActionTypeId:
@@ -162,7 +143,7 @@ Resources:
                 NotificationArn:
                   Ref: PipelineSNSTopic
                 CustomData:
-                  Fn::Sub: 'Do you want to create a change set against the production stack and delete the ${Project}-test stack?'
+                  Fn::Sub: 'Do you want to create a change set against the production stack and delete the ${Repository}-test stack?'
             - Name: Delete
               RunOrder: 5
               ActionTypeId:
@@ -175,7 +156,7 @@ Resources:
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-test-system"
+                    Fn::Sub: "${Repository}-test-system"
         - Name: Release
           Actions:
             - Name: Create
@@ -193,9 +174,9 @@ Resources:
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-release"
+                    Fn::Sub: "${Repository}-release"
                 ChangeSetName:
-                    Fn::Sub: "${Project}-release-cs"
+                    Fn::Sub: "${Repository}-release-cs"
                 TemplatePath: BuildOutput::template.yml
                 TemplateConfiguration: BuildOutput::release.json
             - Name: ApproveChangeSet
@@ -209,7 +190,7 @@ Resources:
                 NotificationArn:
                   Ref: PipelineSNSTopic
                 CustomData:
-                  Fn::Sub: 'A new change set was created for the ${Project} stack. Do you want to implement the changes?'
+                  Fn::Sub: 'A new change set was created for the ${Repository} stack. Do you want to implement the changes?'
             - Name: Deploy
               RunOrder: 3
               ActionTypeId:
@@ -221,17 +202,17 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 Capabilities: CAPABILITY_IAM
                 ChangeSetName:
-                    Fn::Sub: "${Project}-release-cs"
+                    Fn::Sub: "${Repository}-release-cs"
                 RoleArn:
                   Fn::GetAtt: [CloudformationRole, Arn]
                 StackName:
-                    Fn::Sub: "${Project}-release"
+                    Fn::Sub: "${Repository}-release"
 
   Build:
     Type: AWS::CodeBuild::Project
     Properties:
       Name:
-        Fn::Sub: "${Project}"
+        Ref: Repository
       TimeoutInMinutes: 10
       ServiceRole:
         Fn::GetAtt: [BuildRole, Arn]
@@ -331,7 +312,7 @@ Resources:
                   - 'cloudformation:SetStackPolicy'
                 Effect: Allow
                 Resource:
-                  - Fn::Sub: "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:*/${Project}-*/*"
+                  - Fn::Sub: "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:*/${Repository}-*/*"
                   - '*'
               - Action:
                   - 'iam:PassRole'
